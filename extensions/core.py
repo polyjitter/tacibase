@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+
+# tacibot core
+# Handles all important main features of any bot.
+
+'''Core File'''
+
 import discord
 import os
 from discord.ext import commands
@@ -7,29 +14,24 @@ import sys
 import cpuinfo
 import math
 import psutil
+from extensions.models.help import TaciHelpCommand
 
 
 class Core(commands.Cog):
+    """Provides all core features of a bot."""
 
     def __init__(self, bot):
+
+        # Main Stuff
         self.bot = bot
-        self.settings = {
-            'extensions': []
-        }
+        self.extensions_list = bot.extensions_list
+        self.emoji = "\U0001F4E6"
 
-        self._init_extensions()
-
-    def _init_extensions(self):
-        """Initializes extensions."""
-
-        for ext in os.listdir('extensions'):
-            if ext.endswith('.py') and not ext.startswith('core'):
-                try:
-                    self.bot.load_extension(f'extensions.{ext[:-3]}')
-                    self.settings['extensions'].append(
-                        f'extensions.{ext[:-3]}')
-                except:
-                    pass
+        # Help Command
+        self._original_help_command = bot.help_command
+        if bot.config['CUSTOM_HELP']:
+            bot.help_command = TaciHelpCommand()
+        bot.help_command.cog = self
 
     def _humanbytes(self, B) -> str:  # function lifted from StackOverflow
         """Return the given bytes as a human friendly KB, MB, GB, or TB string."""
@@ -56,12 +58,12 @@ class Core(commands.Cog):
     async def about(self, ctx):
         """Returns information about this bot."""
 
-        msg = f"**{self.bot.description}**\n"
-        msg += f"Created by **taciturasa#4365**, this instance by **{self.bot.appinfo.owner}.**\n\n"
+        msg = f"__**{self.bot.user.name}**__ - _{self.bot.description}_\n\n"
+        msg += f"This instance by **{self.bot.appinfo.owner}.**\n\n"
         msg += "**Source Code:** _<https://github.com/taciturasa/searchbot-discord>_\n"
-        msg += "**Support Server:** _<https://discord.gg/4BpReNV>_\n"
-        msg += "_Note: Please attempt to contact the hoster of any separate instances before this server._\n\n"
-        msg += f"_See **{ctx.prefix}** `help` for help, `invite` to add the bot, and `stats` for statistics._"
+        msg += "**Support Server:** _<https://discord.gg/4BpReNV>_\n\n"
+        msg += "_Note: Please attempt to contact the hoster of any separate instances before this server._\n"
+        msg += f"_See **{ctx.prefix}**`help` for help, `invite` to add the bot, and `stats` for statistics._"
 
         await ctx.send(msg)
 
@@ -72,8 +74,13 @@ class Core(commands.Cog):
         msg = (
             "**Thanks for checking me out!**\n\n"
             "Use the following link to add me:\n"
-            f"*<https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&permissions={self.bot.config['PERMS']}&scope=bot>*"
+            f"*<https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot"
         )
+
+        if self.bot.config['PERMS'] is not None:
+            msg += f"&permissions={self.bot.config['PERMS']}>*"
+        else:
+            msg += ">*"
 
         await ctx.send(msg)
 
@@ -107,16 +114,38 @@ Number of extensions present: {len(ctx.bot.cogs)}
         ping = (after - before) * 1000
         await pong.edit(content="`PING discordapp.com {}ms`".format(int(ping)))
 
-    @commands.command()
+    @commands.group(aliases=['extensions', 'ext'], 
+                    invoke_without_command=True)
+    @commands.is_owner()
+    async def extend(self, ctx, name:str = None):
+        """Provides status of extensions and lets you hotswap extensions."""
+
+        # Provides status of extension
+        if name is not None:
+            status = "is" if name in self.extensions_list else "is not"
+            msg = f"**{name}** {status} currently loaded and/or existent."
+
+        # Handles empty calls
+        else:
+            msg = (
+                "**Nothing was provided!**\n\n"
+                "Please provide an extension name for status, "
+                "or provide a subcommand."
+            )
+
+        # Sends completed message
+        await ctx.send(msg)
+
+    @extend.command(aliases=['le', 'l'])
     @commands.is_owner()
     async def load(self, ctx, name: str):
         """Load an extension into the bot."""
         m = await ctx.send(f'Loading {name}')
-        extension_name = 'extensions.{0}'.format(name)
-        if extension_name not in self.settings['extensions']:
+        extension_name = f'extensions.{name}'
+        if extension_name not in self.extensions_list:
             try:
                 self.bot.load_extension(extension_name)
-                self.settings['extensions'].append(extension_name)
+                self.extensions_list.append(extension_name)
                 await m.edit(content='Extension loaded.')
             except Exception as e:
                 await m.edit(
@@ -124,46 +153,75 @@ Number of extensions present: {len(ctx.bot.cogs)}
         else:
             await m.edit(content='Extension already loaded.')
 
-    @commands.command(aliases=["ule", "ul"])
+    @extend.command(aliases=["ule", "ul"])
     @commands.is_owner()
     async def unload(self, ctx, name: str):
         """Unload an extension from the bot."""
 
         m = await ctx.send(f'Unloading {name}')
-        extension_name = 'extensions.{0}'.format(name)
-        if extension_name in self.settings['extensions']:
+        extension_name = f'extensions.{name}'
+        if extension_name in self.extensions_list:
             self.bot.unload_extension(extension_name)
-            self.settings['extensions'].remove(extension_name)
+            self.extensions_list.remove(extension_name)
             await m.edit(content='Extension unloaded.')
         else:
             await m.edit(content='Extension not found or not loaded.')
 
-    @commands.command(aliases=["rle", "rl"])
+    @extend.command(aliases=["rle", "rl"])
     @commands.is_owner()
     async def reload(self, ctx, name: str):
         """Reload an extension of the bot."""
 
         m = await ctx.send(f'Reloading {name}')
-        extension_name = 'extensions.{0}'.format(name)
-        if extension_name in self.settings['extensions']:
+        extension_name = f'extensions.{name}'
+        if extension_name in self.extensions_list:
             self.bot.unload_extension(extension_name)
             try:
                 self.bot.load_extension(extension_name)
                 await m.edit(content='Extension reloaded.')
             except Exception as e:
-                self.settings['extensions'].remove(extension_name)
+                self.extensions_list.remove(extension_name)
                 await m.edit(
                     content=f'Failed to reload extension\n`{type(e).__name__}: {e}`')
         else:
             await m.edit(content='Extension isn\'t loaded.')
+
+    @extend.command(name='list')
+    async def list_cmd(self, ctx):
+        """Lists all extensions loaded by the bot."""
+
+        # Message Construction
+        msg = "**Loaded Extensions**\n\n"
+        msg += '\n'.join(f'`{e}`' for e in self.extensions_list)
+        msg += "\n\n_See the other subcommands of this command to manage them._"
+
+        # Message Sending
+        await ctx.send(msg)
 
     @commands.command(aliases=['exit', 'reboot'])
     @commands.is_owner()
     async def restart(self, ctx):
         """Turns the bot off."""
 
-        await ctx.send(':zzz: **Restarting.**')
+        await ctx.send(":zzz: **Restarting...**")
         exit()
+
+    @commands.command()
+    @commands.is_owner()
+    async def leave(self, ctx):
+        """Makes the bot leave the server this was called in."""
+        
+        if ctx.guild:
+            await ctx.send(
+                "\U0001F4A8 **Leaving server.** "
+                "_If you want me back, add me or get an admin to._")
+            await ctx.guild.leave()
+        else:
+            await ctx.send(
+                "**Can't leave!** _This channel is not inside a guild_")
+
+    def cog_unload(self):
+        self.bot.help_command = self._original_help_command
 
 
 def setup(bot):

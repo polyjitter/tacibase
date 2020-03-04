@@ -8,8 +8,14 @@
   "BOD": "",
   "DBLCOM": "",
   "PREFIX": ["basicbot!"],
+  "CASE_INSENSITIVE": true,
   "PREFIXLESS_DMS": true,
   "MENTION_ASSIST": true,
+  "CUSTOM_HELP": true,
+  "INFO_HOOK": "",
+  "WARN_HOOK": "",
+  "ERROR_HOOK": "",
+  "DEBUG_HOOK": "",
   "PERMS": null,
   "BLOCKED": []
 }
