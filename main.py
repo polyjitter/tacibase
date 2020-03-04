@@ -34,10 +34,6 @@ class Bot(commands.Bot):
             self.maintenance = self.config.get('MAINTENANCE')
             self.description = self.config.get('DESCRIPTION')
 
-        # Get Instances
-        with open('searxes.txt') as f:
-            self.instances = f.read().split('\n')
-
         print('Initialization complete.\n\n')
 
     async def _get_prefix_new(self, bot, msg):
