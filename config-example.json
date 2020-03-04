@@ -1,6 +1,8 @@
 {
   "VERSION": "x.x type",
   "DESCRIPTION": "a basic base for bots, designed by taciturasa.",
+  "REPO": "",
+  "SERVER": "",
   "MAINTENANCE": false,
   "TOKEN": "",
   "DBL": "",

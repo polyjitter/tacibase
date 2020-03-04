@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# search - a tiny little search utility bot for discord.
+# tacibase - a discord.py bot base with many goodies.
 # All original work by taciturasa, with some code by ry00001.
 # Used and modified with permission.
 # See LICENSE for license information.
@@ -93,8 +93,7 @@ class Bot(commands.Bot):
             assist_msg = (
                 "**Hi there! How can I help?**\n\n"
                 # Two New Lines Here
-                f"You may use **{self.user.mention} `term here`** to search, "
-                f"or **{self.user.mention} `help`** for assistance.")
+                f"You may use **{self.user.mention} `help`** for assistance.")
             await ctx.send(assist_msg)
         else:
             # Move on to command handling

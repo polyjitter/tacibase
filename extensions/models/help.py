@@ -40,7 +40,7 @@ class TaciHelpCommand(commands.MinimalHelpCommand):
             f"`{self.clean_prefix}{command_name} [category/command/subcommand]`._"
         )
         if bot.config['PREFIXLESS_DMS']:
-            end_note += f"\n_You can also use all commands without a prefix in DMs, and search with `{self.clean_prefix}term`._"
+            end_note += f"\n_You can also use all commands without a prefix in DMs._"
 
         return end_note
 
