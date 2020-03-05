@@ -29,7 +29,7 @@ class Core(commands.Cog):
 
         # Help Command
         self._original_help_command = bot.help_command
-        if bot.config['CUSTOM_HELP']:
+        if bot.custom_help:
             bot.help_command = TaciHelpCommand()
         bot.help_command.cog = self
 
@@ -60,10 +60,10 @@ class Core(commands.Cog):
 
         msg = f"__**{self.bot.user.name}**__ - _{self.bot.description}_\n\n"
         msg += f"This instance by **{self.bot.appinfo.owner}.**\n\n"
-        if self.bot.config['REPO']:
-            msg += f"**Source Code:** _<{self.bot.config['REPO']}>_\n"
-        if self.bot.config['SERVER:']:
-            msg += f"**Support Server:** _<{self.bot.config['SERVER']}>_\n\n"
+        if self.bot.repo:
+            msg += f"**Source Code:** _<{self.bot.repo}>_\n"
+        if self.bot.support_server:
+            msg += f"**Support Server:** _<{self.bot.support_server}>_\n\n"
         msg += "_Note: Please attempt to contact the hoster of any separate instances before this server._\n"
         msg += f"_See **{ctx.prefix}**`help` for help, `invite` to add the bot, and `stats` for statistics._"
 
@@ -79,8 +79,8 @@ class Core(commands.Cog):
             f"*<https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot"
         )
 
-        if self.bot.config['PERMS'] is not None:
-            msg += f"&permissions={self.bot.config['PERMS']}>*"
+        if self.bot.perms:
+            msg += f"&permissions={self.bot.perms}>*"
         else:
             msg += ">*"
 
