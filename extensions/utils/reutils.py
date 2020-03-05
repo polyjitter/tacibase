@@ -84,6 +84,6 @@ class ReUtils():
 
 def setup(bot):
     if bot.rdb:
-        bot.re_utils = ReUtils(bot)
+        bot.reutils = ReUtils(bot)
     else:
         pass
