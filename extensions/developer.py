@@ -7,11 +7,8 @@
 
 import discord
 from discord.ext import commands
-import os
-import aiohttp
-import random
 import datetime
-import collections
+from collections import OrderedDict
 from contextlib import redirect_stdout
 import traceback
 import time
@@ -19,7 +16,6 @@ import io
 import inspect
 import textwrap
 import subprocess
-from extensions.utils import online
 
 
 class Developer(commands.Cog):
@@ -79,7 +75,7 @@ class Developer(commands.Cog):
         if name is not None:
             embed.title = name.strip(" ")
 
-        history = collections.OrderedDict()
+        history: OrderedDict = OrderedDict()
 
         variables = {
             'ctx': ctx,
@@ -108,6 +104,7 @@ class Developer(commands.Cog):
         while True:
             response = await self.bot.wait_for(
                 'message',
+                # XXX Needs reformatting
                 check=lambda m: m.content.startswith(
                     '`') and m.author == ctx.author and m.channel == ctx.channel
             )
@@ -214,7 +211,7 @@ class Developer(commands.Cog):
                     result = executor(code, variables)
                     if inspect.isawaitable(result):
                         result = await result
-            except Exception as err:
+            except Exception:
                 self.repl_embeds[shell].color = 15746887
                 value = stdout.getvalue()
                 fmt = '```py\n{}{}\n```'.format(
@@ -415,25 +412,20 @@ class Developer(commands.Cog):
                     await ctx.send(message)
         except discord.HTTPException:
             if not silent:
-                with aiohttp.ClientSession() as sesh:
-                    async with sesh.post(
-                            "https://hastebin.com/documents/",
-                            data=output,
-                            headers={"Content-Type": "text/plain"}) as r:
-                        r = await r.json()
-                        embed = discord.Embed(
-                            description=(
-                                "[View output - click]"
-                                "(https://hastebin.com/raw/{})").format(
-                                    r["key"]))
-                        await ctx.send(embed=embed)
+                url = await self.online.hastebin(output)
+                embed = discord.Embed(
+                    description=f"[View output - click]({url})"
+                )
+                await ctx.send(embed=embed)
 
     @commands.command(aliases=['sys',  'sh'])
     async def system(self, ctx, *, command: str):
         """Runs system commands."""
 
-        message = await ctx.send('<a:loading:393852367751086090> Processing...')
-        result = []
+        msg = await ctx.send(
+            '<a:loading:393852367751086090> Processing...'
+        )
+        result: tuple = ()
         try:
             process = subprocess.Popen(command.split(
                 ' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -457,7 +449,7 @@ class Developer(commands.Cog):
                 stdout = result[0].decode('utf-8')
                 string = string + f'[[STDOUT]]\n{stdout}'
                 link = await self.online.hastebin(string)
-                await message.edit(
+                await msg.edit(
                     content=f":x: Content too long. {link}",
                     embed=None)
                 return
@@ -466,7 +458,7 @@ class Developer(commands.Cog):
                 stdout = result[0].decode('utf-8')
                 string = string + f'[[STDERR]]\n{stdout}'
                 link = await self.online.hastebin(string)
-                await message.edit(
+                await msg.edit(
                     content=f":x: Content too long. {link}",
                     embed=None)
                 return
@@ -478,7 +470,7 @@ class Developer(commands.Cog):
             name="stderr",
             value=f'```{stderr}```' if 'stderr' in locals() else 'No output.',
             inline=False)
-        await message.edit(content='', embed=embed)
+        await msg.edit(content='', embed=embed)
 
     # @commands.command()
     # async def git(self, ctx, sub, flags=""):
